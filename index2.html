@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>지호♥︎와의 대화</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #050507;
+            color: #e5e7eb;
+            user-select: none;
+        }
+
+        /* Custom scrollbar */
+        .chat-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .chat-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 9999px;
+        }
+        
+        @keyframes popIn {
+            0% { opacity: 0; transform: translateY(6px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-pop {
+            animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.03); }
+        }
+        .animate-pulse-glow {
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex justify-center items-center h-screen w-screen bg-[#050507] overflow-hidden sm:py-4">
+
+    <div class="w-full max-w-md h-full sm:h-[94vh] bg-[#000000] flex flex-col shadow-2xl sm:rounded-[36px] overflow-hidden border border-[#1d1e26]/80 relative">
+        
+        <!-- Call Status Bar & Timer Trigger -->
+        <div class="bg-[#12131a] px-4 py-2 border-b border-[#1f212c] flex items-center justify-between z-20 text-xs">
+            <div class="flex items-center gap-2">
+                <span id="call-timer-status" class="inline-flex items-center gap-1.5 font-medium text-blue-400">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                    전화 대기 중 (<span id="countdown-text">25</span>초)
+                </span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="resetCallTimer()" class="px-2 py-1 bg-[#232533] hover:bg-[#2e3142] text-gray-300 rounded-md transition-colors text-[11px]">
+                    타이머 리셋
+                </button>
+                <button onclick="triggerCallNow()" class="px-2 py-1 bg-green-600 hover:bg-green-500 text-white font-medium rounded-md transition-colors text-[11px]">
+                    지금 전화
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Header -->
+        <header class="px-4 py-3 bg-[#0a0a0d]/90 backdrop-blur-md border-b border-[#1c1d22] flex items-center justify-between shrink-0 z-10">
+            <div class="flex items-center space-x-3">
+                <button class="text-gray-300 hover:text-white p-1 rounded-full transition-colors active:scale-95" aria-label="Back">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <div class="flex flex-col">
+                    <span class="font-bold text-white text-[16px] tracking-tight flex items-center gap-1">
+                        지호♥︎
+                    </span>
+                    <span class="text-[11px] text-gray-500 font-normal">온라인</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-1 text-gray-300">
+                <button onclick="triggerCallNow()" class="p-2 hover:bg-[#1a1b22] text-green-400 rounded-full transition-colors" title="전화 걸기">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                    </svg>
+                </button>
+                <button class="p-2 hover:bg-[#1a1b22] rounded-full transition-colors" title="메뉴">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Message List Container -->
+        <main id="chat-container" class="chat-scroll flex-1 overflow-y-auto px-3.5 py-4 space-y-2 bg-[#000000]">
+            <!-- Dynamic Messages injected via JavaScript -->
+        </main>
+
+        <!-- Input Footer & Sender Controls -->
+        <footer class="bg-[#0a0a0d] border-t border-[#1a1b20] p-3 shrink-0 flex flex-col gap-2">
+            <!-- Sender Toggle Selector -->
+            <div class="flex items-center justify-between px-1">
+                <div class="flex items-center bg-[#15161d] p-0.5 rounded-lg border border-[#232530]">
+                    <button id="toggle-other" onclick="setSender('other')" 
+                        class="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all text-gray-200 bg-[#2b2d3a] shadow-sm">
+                        지호♥︎ (상대)
+                    </button>
+                    <button id="toggle-me" onclick="setSender('me')" 
+                        class="px-2.5 py-1 text-[11px] font-medium rounded-md transition-all text-gray-400 hover:text-gray-200">
+                        나 (보내기)
+                    </button>
+                </div>
+
+                <div class="flex items-center space-x-1">
+                    <input type="text" id="time-input" value="오후 2:00" placeholder="시간 예: 1:00" 
+                        class="w-20 bg-[#15161d] text-[11px] text-gray-300 border border-[#232530] rounded-lg px-2 py-1 focus:outline-none focus:border-blue-500 text-center">
+                </div>
+            </div>
+
+            <!-- Input Form -->
+            <form id="chat-form" onsubmit="handleSend(event)" class="flex items-center gap-2 mt-0.5">
+                <div class="relative flex-1 flex items-center">
+                    <input type="text" id="message-input" placeholder="메시지를 입력하세요..." 
+                        class="w-full bg-[#15161d] text-sm text-white placeholder-gray-500 rounded-2xl px-4 py-2.5 border border-[#232530] focus:outline-none focus:border-blue-500/80 transition-colors">
+                </div>
+                <button type="submit" 
+                    class="bg-[#007AFF] hover:bg-blue-500 text-white p-2.5 rounded-2xl font-medium transition-transform active:scale-95 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+                    <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
+                    </svg>
+                </button>
+            </form>
+        </footer>
+
+        <!-- iOS Style Incoming Call Overlay -->
+        <div id="call-screen" class="hidden absolute inset-0 z-50 bg-[#0d0e15]/95 backdrop-blur-xl flex-col justify-between p-8 text-white transition-opacity duration-300">
+            <!-- Incoming / Active Call Top Info -->
+            <div class="flex flex-col items-center mt-12 space-y-3">
+                <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-gray-700 to-gray-500 flex items-center justify-center text-4xl shadow-xl border-2 border-gray-400/30 animate-pulse-glow">
+                    👤
+                </div>
+                <h2 class="text-3xl font-bold tracking-tight text-white mt-2">은지호</h2>
+                <p class="text-gray-400 text-sm font-medium">지호♥︎</p>
+                <p id="call-status-subtitle" class="text-xs text-blue-400 font-semibold tracking-wider uppercase animate-pulse">음성 통화 요청 중...</p>
+                <p id="active-call-timer" class="text-lg font-mono text-green-400 hidden">00:00</p>
+            </div>
+
+            <!-- Call Actions / Buttons -->
+            <div id="incoming-buttons" class="flex items-center justify-around w-full mb-12">
+                <!-- Decline Button -->
+                <div class="flex flex-col items-center gap-2">
+                    <button onclick="declineCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform">
+                        <svg class="w-8 h-8 transform rotate-[135deg]" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                        </svg>
+                    </button>
+                    <span class="text-xs text-gray-300">거절</span>
+                </div>
+
+                <!-- Accept Button -->
+                <div class="flex flex-col items-center gap-2">
+                    <button onclick="acceptCall()" class="w-16 h-16 rounded-full bg-green-500 hover:bg-green-400 flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform animate-bounce">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                        </svg>
+                    </button>
+                    <span class="text-xs text-gray-300">수신</span>
+                </div>
+            </div>
+
+            <!-- Active Call Hangup Button -->
+            <div id="active-buttons" class="hidden flex justify-center w-full mb-12">
+                <div class="flex flex-col items-center gap-2">
+                    <button onclick="endCall()" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform">
+                        <svg class="w-8 h-8 transform rotate-[135deg]" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                        </svg>
+                    </button>
+                    <span class="text-xs text-gray-300">통화 종료</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentSender = 'other';
+        let callTimerInterval = null;
+        let activeCallTimerInterval = null;
+        let countdownValue = 25;
+        let ringtoneOscillator = null;
+        let ringtoneGain = null;
+        let audioCtx = null;
+        let callActiveDuration = 0;
+
+        // Complete conversation history
+        const conversationHistory = [
+            { type: 'message', sender: 'other', text: '너 알지.' },
+            { type: 'message', sender: 'other', text: '그러니까 나 피하는거지.' },
+            { type: 'date', text: '2023년 7월 1일' },
+            { type: 'message', sender: 'other', text: '나 너 좋아해.' },
+            { type: 'message', sender: 'other', text: '..너도 알잖아.' },
+            { type: 'message', sender: 'other', text: '너도 나한테 아예 마음 없는 거 아니잖아.' },
+            { type: 'message', sender: 'other', text: '차단 왜 안하는데?' },
+            
+            { type: 'date', text: '2023년 7월 28일' },
+            { type: 'message', sender: 'other', text: '함단이 어디야', time: '11:00' },
+            { type: 'message', sender: 'other', text: '이 시간에 설마 거기 있는거 아니지?', time: '11:00' },
+            { type: 'message', sender: 'other', text: '나 너네 집 앞이야.', time: '오후 11:30' },
+            { type: 'message', sender: 'me', text: '나 남친이랑 있어.', time: '오후 11:30' },
+            { type: 'message', sender: 'me', text: '얘기 좀 하다가 들어갈거야.', time: '12:00' },
+            { type: 'message', sender: 'other', text: '기다릴게.', time: '1:00' },
+
+            { type: 'date', text: '2023년 9월 20일' },
+            { type: 'message', sender: 'me', text: '헤어졌어.' },
+            { type: 'message', sender: 'other', text: '그래' },
+            { type: 'message', sender: 'me', text: '돈 보냈어' },
+            { type: 'message', sender: 'other', text: '야 안보내도 된다니까.' },
+            { type: 'message', sender: 'me', text: '원래 남일수록 더 철저하게 보내야해.' },
+            { type: 'message', sender: 'other', text: '그러니까 안 보내도 된다고….' },
+
+            { type: 'date', text: '2023년 10월 2일' },
+            { type: 'message', sender: 'me', text: '연락 당분간 못할듯' },
+            { type: 'message', sender: 'other', text: '또?' },
+            { type: 'message', sender: 'me', text: '응 별로 안좋아하네 왜지?' },
+            { type: 'message', sender: 'other', text: '그래. 어차피 해어질건데' },
+            { type: 'message', sender: 'me', text: '아.니 거든 ㅡㅡ' },
+            { type: 'message', sender: 'other', text: '…….어차피 돌고돌아 내곁 아니냐?' },
+            { type: 'message', sender: 'me', text: 'ㅋㅋㅋㅋ ㅗ' },
+
+            { type: 'date', text: '2023년 11월 4일' },
+            { type: 'message', sender: 'me', text: '우울해….' },
+            { type: 'message', sender: 'other', text: '헤어짐?' },
+            { type: 'message', sender: 'me', text: '응' },
+            { type: 'message', sender: 'other', text: '집앞으로 갈게.' },
+            { type: 'message', sender: 'me', text: '얼른와' },
+
+            { type: 'date', text: '2024년 1월 3일' },
+            { type: 'message', sender: 'me', text: '술먹자' },
+            { type: 'message', sender: 'other', text: '그래' },
+
+            { type: 'date', text: '2024년 2월 28일' },
+            { type: 'message', sender: 'other', text: '왜 ㅋㅋ' },
+            { type: 'message', sender: 'me', text: '또 헤어짐 ㅋㅋ' },
+            { type: 'message', sender: 'other', text: '그래.' },
+            { type: 'message', sender: 'me', text: '또 너 얘기 하더라' },
+            { type: 'message', sender: 'other', text: '…뭐라고?' },
+            { type: 'message', sender: 'me', text: '몰라 ㅡㅡ 너가 그냥 남사친 아닌것 같다고.' },
+            { type: 'message', sender: 'other', text: 'ㅋㅋㅋ' },
+            { type: 'message', sender: 'me', text: '말이 안되는 일인데.' },
+            { type: 'message', sender: 'other', text: '..그래.' },
+
+            { type: 'date', text: '2024년 3월 10일' },
+            { type: 'message', sender: 'other', text: '좋아해' },
+            { type: 'message', sender: 'me', text: '알아.' },
+            { type: 'message', sender: 'other', text: 'ㅋㅋ…' },
+            { type: 'message', sender: 'me', text: '그래서 술 마실래?' },
+            { type: 'message', sender: 'other', text: '…어딘데?' },
+
+            { type: 'date', text: '2024년 5월 20일' },
+            { type: 'message', sender: 'me', text: '왜 좋아하냐' },
+            { type: 'message', sender: 'me', text: '너가 왜 그런 말 하냐' },
+            { type: 'message', sender: 'me', text: '사람 햇갈리ㄱ 세' },
+            { type: 'message', sender: 'me', text: '어ㄸ매누애 지금 몇네번이나 차인ㄱ ㅡ어 야' },
+            { type: 'message', sender: 'other', text: '술 취했어?' },
+            { type: 'message', sender: 'me', text: '웅' },
+            { type: 'message', sender: 'other', text: '..어딘데?' },
+            { type: 'message', sender: 'me', text: '보고싶다.' },
+            { type: 'message', sender: 'other', text: '나돈데 어디냐고.' },
+            { type: 'message', sender: 'me', text: '히히' },
+            { type: 'message', sender: 'other', text: '전화 받아' },
+            { type: 'message', sender: 'me', text: '웅' },
+
+            { type: 'date', text: '2024년 6월 1일' },
+            { type: 'message', sender: 'other', text: '왜 나는 안돼?' },
+            { type: 'message', sender: 'me', text: 'ㅋㅋ나랑 있음 불행해져' },
+            { type: 'message', sender: 'other', text: '그럴리가 없잖아.' },
+            { type: 'message', sender: 'me', text: '그리고 내가 너랑 사귀면' },
+            { type: 'message', sender: 'me', text: '내가 불행해질걸.' },
+            { type: 'message', sender: 'other', text: '…왜?' },
+            { type: 'message', sender: 'me', text: '바라면 안되니까.' },
+
+            { type: 'date', text: '2024년 6월 13일' },
+            { type: 'message', sender: 'me', text: '술 먹자' },
+            { type: 'message', sender: 'other', text: '거기로 간다. 또 헤어짐?' },
+            { type: 'message', sender: 'me', text: '웅' },
+            { type: 'message', sender: 'other', text: '금방 갈게' },
+
+            { type: 'date', text: '2024년 6월 14일' },
+            { type: 'message', sender: 'other', text: '어제 잘 들어갔어?' },
+            { type: 'message', sender: 'me', text: '응' },
+            { type: 'message', sender: 'other', text: '넌 남들이랑 술 먹지 말아야겠다' },
+            { type: 'message', sender: 'me', text: 'ㅋㅋㅋㅋㅋ' },
+            { type: 'message', sender: 'other', text: '부탁이다.' },
+
+            { type: 'date', text: '2024년 7월 19일' },
+            { type: 'message', sender: 'other', text: '너 왜 또 피해' },
+
+            { type: 'date', text: '2024년 7월 20일' },
+            { type: 'message', sender: 'other', text: 'ㅋㅋ야 연락은 받아라.' },
+
+            { type: 'date', text: '2024년 7월 25일' },
+            { type: 'message', sender: 'other', text: '너 전남친이 또 그러면 나한테 말해.' },
+
+            { type: 'date', text: '2024년 8월 5일' },
+            { type: 'message', sender: 'other', text: '너 네집 앞이다.' },
+
+            { type: 'date', text: '2024년 10월 2일' },
+            { type: 'message', sender: 'other', text: '조심히 들어가' },
+            { type: 'message', sender: 'me', text: '웅' },
+            { type: 'message', sender: 'other', text: '보고싶다' },
+            { type: 'message', sender: 'me', text: '나두' },
+            { type: 'message', sender: 'other', text: '사랑해' },
+            { type: 'message', sender: 'me', text: '나두' },
+            { type: 'message', sender: 'other', text: '고마워.' },
+
+            { type: 'date', text: '2024년 10월 13일' },
+            { type: 'message', sender: 'me', text: '사실은 아직 많이 두려워' },
+            { type: 'message', sender: 'other', text: '뭐가?' },
+            { type: 'message', sender: 'me', text: '나 때문에…' },
+            { type: 'message', sender: 'other', text: '그런 말 하지 말랬잖아.' },
+            { type: 'message', sender: 'me', text: '후회 안해?' },
+            { type: 'message', sender: 'other', text: '안해. 했으면 진작 했어.' },
+            { type: 'message', sender: 'me', text: '…바보' },
+            { type: 'message', sender: 'other', text: '바보는 너고 얼른 나와 맛있는거 먹자' },
+
+            { type: 'date', text: '2024년 10월 15일' },
+            { type: 'message', sender: 'me', text: '지호야.' },
+            { type: 'message', sender: 'other', text: '응?' },
+            { type: 'message', sender: 'me', text: '사랑해.' },
+            { type: 'message', sender: 'me', text: '그리고 고마워' },
+            { type: 'message', sender: 'me', text: '내가 필요할때 옆에 있어줘서' },
+            { type: 'message', sender: 'me', text: '그리고' },
+            { type: 'message', sender: 'me', text: '날…좋아해줘서.' },
+            { type: 'message', sender: 'me', text: '사랑해.' },
+            { type: 'message', sender: 'other', text: '나도 사랑해 단아.' }
+        ];
+
+        function startCallCountdown() {
+            clearInterval(callTimerInterval);
+            countdownValue = 25;
+            document.getElementById('countdown-text').textContent = countdownValue;
+            document.getElementById('call-timer-status').innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                전화 대기 중 (<span id="countdown-text">${countdownValue}</span>초)
+            `;
+
+            callTimerInterval = setInterval(() => {
+                countdownValue--;
+                const countEl = document.getElementById('countdown-text');
+                if (countEl) countEl.textContent = countdownValue;
+
+                if (countdownValue <= 0) {
+                    clearInterval(callTimerInterval);
+                    triggerCallNow();
+                }
+            }, 1000);
+        }
+
+        function resetCallTimer() {
+            startCallCountdown();
+        }
+
+        function playRingtone() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                // Create periodic tone generator for incoming call sound
+                ringtoneGain = audioCtx.createGain();
+                ringtoneGain.gain.value = 0.15;
+                ringtoneGain.connect(audioCtx.destination);
+
+                let isBeep = false;
+                ringtoneOscillator = setInterval(() => {
+                    if (!audioCtx) return;
+                    const osc = audioCtx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(isBeep ? 523.25 : 659.25, audioCtx.currentTime); // C5 & E5
+                    osc.connect(ringtoneGain);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                    isBeep = !isBeep;
+                }, 500);
+            } catch (e) {
+                console.log("Audio play blocked or unsupported:", e);
+            }
+        }
+
+        function stopRingtone() {
+            if (ringtoneOscillator) {
+                clearInterval(ringtoneOscillator);
+                ringtoneOscillator = null;
+            }
+        }
+
+        function triggerCallNow() {
+            clearInterval(callTimerInterval);
+            document.getElementById('call-timer-status').innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                은지호 전화 연결 중...
+            `;
+
+            document.getElementById('call-status-subtitle').textContent = "음성 통화 요청 중...";
+            document.getElementById('incoming-buttons').classList.remove('hidden');
+            document.getElementById('incoming-buttons').classList.add('flex');
+            document.getElementById('active-buttons').classList.add('hidden');
+            document.getElementById('active-call-timer').classList.add('hidden');
+
+            const callScreen = document.getElementById('call-screen');
+            callScreen.classList.remove('hidden');
+            callScreen.classList.add('flex');
+
+            playRingtone();
+        }
+
+        function acceptCall() {
+            stopRingtone();
+            document.getElementById('call-status-subtitle').textContent = "통화 중";
+            document.getElementById('incoming-buttons').classList.add('hidden');
+            document.getElementById('incoming-buttons').classList.remove('flex');
+            
+            document.getElementById('active-buttons').classList.remove('hidden');
+            document.getElementById('active-buttons').classList.add('flex');
+            
+            const timerEl = document.getElementById('active-call-timer');
+            timerEl.classList.remove('hidden');
+
+            callActiveDuration = 0;
+            clearInterval(activeCallTimerInterval);
+            activeCallTimerInterval = setInterval(() => {
+                callActiveDuration++;
+                const mins = String(Math.floor(callActiveDuration / 60)).padStart(2, '0');
+                const secs = String(callActiveDuration % 60).padStart(2, '0');
+                timerEl.textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function declineCall() {
+            stopRingtone();
+            closeCallScreen();
+        }
+
+        function endCall() {
+            clearInterval(activeCallTimerInterval);
+            stopRingtone();
+            closeCallScreen();
+        }
+
+        function closeCallScreen() {
+            const callScreen = document.getElementById('call-screen');
+            callScreen.classList.add('hidden');
+            callScreen.classList.remove('flex');
+
+            document.getElementById('call-timer-status').innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-gray-500"></span>
+                통화 종료됨
+            `;
+        }
+
+        function setSender(role) {
+            currentSender = role;
+            const btnOther = document.getElementById('toggle-other');
+            const btnMe = document.getElementById('toggle-me');
+
+            if (role === 'other') {
+                btnOther.className = "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all text-gray-200 bg-[#2b2d3a] shadow-sm";
+                btnMe.className = "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all text-gray-400 hover:text-gray-200";
+            } else {
+                btnMe.className = "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all text-gray-200 bg-[#007AFF] shadow-sm";
+                btnOther.className = "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all text-gray-400 hover:text-gray-200";
+            }
+        }
+
+        function renderChat() {
+            const container = document.getElementById('chat-container');
+            container.innerHTML = '';
+
+            conversationHistory.forEach((item) => {
+                if (item.type === 'date') {
+                    const dateEl = document.createElement('div');
+                    dateEl.className = 'flex justify-center my-5 animate-pop';
+                    dateEl.innerHTML = `
+                        <span class="text-[11px] text-gray-400 font-medium tracking-tight px-3.5 py-1 rounded-full bg-[#161821] border border-[#222533]">
+                            ${item.text}
+                        </span>
+                    `;
+                    container.appendChild(dateEl);
+                } else {
+                    const isMe = item.sender === 'me';
+                    const wrapper = document.createElement('div');
+                    wrapper.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1 animate-pop`;
+
+                    const bubbleFlex = document.createElement('div');
+                    bubbleFlex.className = `flex items-end gap-1.5 max-w-[80%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`;
+
+                    const bubble = document.createElement('div');
+                    bubble.className = `px-3.5 py-2 rounded-[18px] text-[13.5px] leading-[1.45] break-words ${
+                        isMe 
+                            ? 'bg-[#007AFF] text-white rounded-tr-[4px] font-normal shadow-sm' 
+                            : 'bg-[#22232a] text-gray-100 rounded-tl-[4px] font-normal'
+                    }`;
+                    bubble.textContent = item.text;
+
+                    bubbleFlex.appendChild(bubble);
+
+                    if (item.time) {
+                        const timeSpan = document.createElement('span');
+                        timeSpan.className = 'text-[10px] text-gray-500 shrink-0 pb-0.5 select-none font-light';
+                        timeSpan.textContent = item.time;
+                        bubbleFlex.appendChild(timeSpan);
+                    }
+
+                    wrapper.appendChild(bubbleFlex);
+                    container.appendChild(wrapper);
+                }
+            });
+
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleSend(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const timeInput = document.getElementById('time-input');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            conversationHistory.push({
+                type: 'message',
+                sender: currentSender,
+                text: text,
+                time: timeInput.value.trim() || undefined
+            });
+
+            input.value = '';
+            renderChat();
+        }
+
+        window.onload = () => {
+            renderChat();
+            startCallCountdown();
+        };
+    </script>
+</body>
+</html>
